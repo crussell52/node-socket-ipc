@@ -28,6 +28,7 @@ function createServer() {
     console.log(`creating server (${serverNum})`);
     
     const server = new Server({socketFile: SOCKET_FILE});
+    server.on('connectionClose', (clientId) => console.log(`Client (${clientId}) disconnected`));
     server.on('listening', () => console.log(`server (${serverNum}) is listening`));
     server.on('connection', (clientId) => {
         // Say hello to the client.
