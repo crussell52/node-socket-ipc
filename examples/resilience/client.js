@@ -7,7 +7,7 @@
  * Hint: Don't forget to define the SOCKET_FILE before running!
  */
 
-const {Client} = require('../../ipc');
+const {Client} = require('../../index');
 
 const SOCKET_FILE = undefined;
 
@@ -18,4 +18,3 @@ client.on('disconnect', () => console.log('disconnected from server'));
 client.on('reconnect', () => console.log('reconnected to server'));
 client.on('message', (message, topic) => console.log(`Heard: [${topic}]`, message));
 client.connect();
-
