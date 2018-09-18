@@ -1,3 +1,10 @@
+/**
+ * 
+ * @author Chris Russell <crussell52@gmail.com>
+ * @copyright Chris Russell 2018
+ * @license MIT
+ */
+
 'use strict';
 
 const {EventEmitter} = require('events');

@@ -10,6 +10,10 @@
  * to see a demonstration of client resliency.
  * 
  * Hint: Don't forget to define the SOCKET_FILE before running!
+ * 
+ * @author Chris Russell <crussell52@gmail.com>
+ * @copyright Chris Russell 2018
+ * @license MIT
  */
 const {Server} = require('../../index');
 
