@@ -1,12 +1,18 @@
 {
   "name": "@crussell52/socket-ipc",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An event-driven IPC implementation using unix file sockets.",
+  "keywords": ["sockets", "ipc", "unix"],
+  "homepage": "https://crussell52.github.io/node-socket-ipc/",
+  "bugs": {
+    "url": "https://github.com/crussell52/node-socket-ipc/issues"
+  },
+  "repository": "github:crussell52/node-socket-ipc",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "crussell52@gmail.com",
+  "author": "Chris Russell <crussell52@gmail.com>",
   "license": "MIT",
-  "keywords": ["sockets", "ipc", "unix"]
+  "engines" : { "node" : ">=8.0.0" }  
 }
