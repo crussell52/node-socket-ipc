@@ -9,7 +9,7 @@
 const {EventEmitter} = require('events');
 const net = require('net');
 const fs = require('fs');
-const delimeter = '%<EOM>%\n';
+const delimiter = '%<EOM>%\n';
 
 /**
  * Takes in a value and make sure it looks like a reasonable socket file path.
@@ -63,7 +63,7 @@ const send = (socket, data, topic) => {
     socket.write(JSON.stringify({
         topic: topic || 'none',
         data: data
-    }) + delimeter);
+    }) + delimiter);
 };
 
 class MessageBuffer {
@@ -76,8 +76,8 @@ class MessageBuffer {
         // Use the buffer plus this chunk as the data that we need to process.
         let data = this.buffer += chunk;
 
-        // Split on the delimeter to find distinct and complete messages.
-        let messages = data.split(delimeter);
+        // Split on the delimiter to find distinct and complete messages.
+        let messages = data.split(delimiter);
 
         // Pop the last element off of the message array. It is either an incomplete message
         // or an empty string. Use it as the new buffer value.
@@ -85,18 +85,9 @@ class MessageBuffer {
 
         return messages;
     }
-};
+}
 
-/**
- * @fires message (message, topic, clientId)
- * @fires message.topic (message, clientId)
- * @fires connection (clientId)
- * @fires connectionClose (clientId)
- * @fires listening
- * @fires messageError (error, clientId) 
- * @fires close
- * @fires error (error)
- */
+
 class Server extends EventEmitter {
     /**
      * @param {string} options.socketFile - Path to the socket file to use. 
@@ -135,7 +126,7 @@ class Server extends EventEmitter {
         // Create the server. 
         this._server = net.createServer();
         this._server.on('error', err => {
-            if (err.code == 'EADDRINUSE') {
+            if (err.code === 'EADDRINUSE') {
                 // See if it is a valid server by trying to connect to it.
                 const testSocket = net.createConnection({path: this._socketFile});
                 
@@ -174,7 +165,7 @@ class Server extends EventEmitter {
 
         this._server.on('listening', () => {
             this.emit('listening');
-        })
+        });
         
         this._server.on('connection', socket => {
             
@@ -237,18 +228,8 @@ class Server extends EventEmitter {
 
         send(this._clientLookup.get(clientId), message, topic);
     }
-};
+}
 
-/**
- * @fires connect
- * @fires connectError (error)
- * @fires disconnect 
- * @fires close
- * @fires message (message, topic)
- * @fires message.topic (message)
- * @fires messageError (error) 
- * @fires error (error)
- */
 class Client extends EventEmitter {
     /**
      * @param {int} [options.retryDelay=1000] - The number of milliseconds to wait between connection attempts.
@@ -287,7 +268,7 @@ class Client extends EventEmitter {
         const handleConnectError = (err) => {
             this.emit('connectError', err);
             this._retryTimeoutId = setTimeout(() => this._connect(isReconnect), this._retryDelay);
-        }
+        };
         socket.on('error', handleConnectError);
 
         socket.on('connect', () => {
@@ -354,4 +335,4 @@ module.exports = {
     Client,
     Server,
     MessageError
-}
+};

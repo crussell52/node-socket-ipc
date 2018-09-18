@@ -41,7 +41,7 @@ const createClient = (clientName) => {
     // Log ALL messages from the server, regardless of the topic.
     client.on('message', (message, topic) => {
         console.log(`Server -> Client (${clientName}): `, `[${topic}]`, message);
-    })
+    });
 
     // Whenever the server says hello, send a "helloback" message. Include
     // the original server message and this client's name.
@@ -58,7 +58,7 @@ const server = new Server({socketFile: SOCKET_FILE});
 // extra argument which provides a client id.
 server.on('message', (message, topic, clientId) => {
     console.log(`Client (${clientId}) -> Server: `, `[${topic}]`, message);
-})
+});
 
 // When the client replies to our "hello" with a "helloback", reply with a "helloagain"... BUT only for
 // clients named "charlie".
@@ -69,7 +69,7 @@ server.on('message.helloback', (message, clientId) => {
         // was nice enough to include.
         server.send('helloagain', message.original, clientId);
     }
-})
+});
 
 // Start everything up. 
 let helloCounter = 1;

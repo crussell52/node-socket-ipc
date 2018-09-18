@@ -39,7 +39,7 @@ function createServer() {
     // After the first client connects, start a time to shut down the server.
     // This will show what happens to the client(s) when a server disappears.
     server.once('connection', () => {
-        console.log(`Server (${serverNum}) will shut down in 10 second.`)
+        console.log(`Server (${serverNum}) will shut down in 10 second.`);
         setTimeout(() => server.close(), 10000);
     });
 
