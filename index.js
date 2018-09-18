@@ -235,7 +235,7 @@ class Server extends EventEmitter {
 
 /**
  * @fires connect
- * @fires noServer (error)
+ * @fires connectError (error)
  * @fires disconnect (had_error)
  * @fires close (had_error)
  * @fires message (message, topic)
@@ -275,9 +275,22 @@ class Client extends EventEmitter {
         const socket = net.createConnection({path: this._socketFile});
         socket.setEncoding('utf8');
 
+        // Until a connection is established, handle errors as connection errors.
+        const handleConnectError = (err) => {
+            this.emit('connectError', err);
+            this._retryTimeoutId = setTimeout(() => this._connect(isReconnect), this._retryDelay);
+        }
+        socket.on('error', handleConnectError);
+
         socket.on('connect', () => {
             this._socket = socket;
             isReconnect ? this.emit('reconnect') : this.emit('connect');
+            
+            // Swap out the connection error handling for standard error handling.
+            socket.removeListener('error', handleConnectError);
+            socket.on('error', (err) => this.emit('error', err));
+            
+            // Handle closed sockets.
             socket.on('close', had_error => {
                 // "Forget" the socket.
                 this._socket = null;
@@ -290,24 +303,9 @@ class Client extends EventEmitter {
                     // Announce the disconnect, then try to reconnect after a brief delay.
                     
                     this.emit('disconnect', had_error);
-                    setTimeout(() => this._connect(true), this._reconnectDelay);
+                    this._reconnectDelayTimeoutId = setTimeout(() => this._connect(true), this._reconnectDelay);
                 }
             });
-        });
-        
-        socket.on('error', err => {
-            // Look for a failure to find the socket file.
-            if (err.code == 'ENOENT' || err.code == 'ECONNREFUSED') {
-                // Socket file does not exist, or there is no server using it. Try again in 1s.
-                this.emit('noServer', err);
-                setTimeout(() => {
-                    this._connect(isReconnect);
-                }, this._retryDelay);
-                return;
-            }
-
-            // Some other error... just emit the error event.
-            this.emit('error', err);
         });
 
         const buffer = new MessageBuffer();
@@ -331,7 +329,9 @@ class Client extends EventEmitter {
 
     close() {
         this._explicitClose = true;
+        // Stop any retry or reconnect timers.
         clearTimeout(this._retryTimeoutId);
+        clearTimeout(this._reconnectDelayTimeoutId);
         if (this._socket) {
             this._socket.close();
         }

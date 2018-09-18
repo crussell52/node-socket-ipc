@@ -12,7 +12,7 @@ const {Client} = require('../../index');
 const SOCKET_FILE = undefined;
 
 const client = new Client({socketFile: SOCKET_FILE});
-client.on('noServer', () => console.log('no server'));
+client.on('connectError', () => console.log('no server'));
 client.on('connect', () => console.log('connected to server'));
 client.on('disconnect', () => console.log('disconnected from server'));
 client.on('reconnect', () => console.log('reconnected to server'));
