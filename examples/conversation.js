@@ -29,7 +29,7 @@
 
 const SOCKET_FILE = undefined;
 
-const {Server, Client} = require ('../index');
+const {Server, Client} = require ('../src/index');
 
 const createClient = (clientName) => {
     // DO NOT pass the server in; DO NOT return the client.

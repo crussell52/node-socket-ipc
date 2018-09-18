@@ -15,7 +15,7 @@
  * @copyright Chris Russell 2018
  * @license MIT
  */
-const {Server} = require('../../index');
+const {Server} = require('../../src/index');
 
 const SOCKET_FILE = undefined;
 

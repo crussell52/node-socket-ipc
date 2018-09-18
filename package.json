@@ -2,7 +2,7 @@
   "name": "@crussell52/node-ipc",
   "version": "0.1.0",
   "description": "An event-driven IPC implementation using unix file sockets.",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

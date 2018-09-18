@@ -11,7 +11,7 @@
  * @license MIT
  */
 
-const {Client} = require('../../index');
+const {Client} = require('../../src/index');
 
 const SOCKET_FILE = undefined;
 
