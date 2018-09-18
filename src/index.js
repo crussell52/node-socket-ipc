@@ -1,5 +1,4 @@
 /**
- * 
  * @author Chris Russell <crussell52@gmail.com>
  * @copyright Chris Russell 2018
  * @license MIT
@@ -265,6 +264,8 @@ class Client extends EventEmitter {
             throw new Error(`Invalid value for 'options.socketFile' (${options.socketFile}): ${invalidSockFileReason}`);
         }
         this._socketFile = options.socketFile;
+        this._retryDelay = options.retryDelay || 1000;
+        this._reconnectDelay = options.reconnectDelay || 100;
     }
 
     connect() {
