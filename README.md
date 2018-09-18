@@ -1,8 +1,6 @@
 # @crussell52/socket-ipc
 An event-driven IPC implementation using unix file sockets.
 
-# About
-
 ## Limitations
 
 Let's start with what this lib can't do so you can move on if it isn't a good fit for your project.
@@ -236,6 +234,100 @@ Possible signatures:
     * `clientId` (number) - The id of the client. Do not send messages to clients that have disconnected.
   
   - `close` - Fires when the server is closed and all connections have been ended.
+
+  - `error` (error) - Fires when an error occurs. `Node` provides special treatment of `error` events.
+    * `error` (Error) - The error that occurred. 
+
+### Client
+
+This library follows a standard server/client pattern. There is one server which listens for connections
+from one or more clients.  Intuitively, the `Client` class provides the interface for establishing the
+client side of the equation.
+
+The client can receive messages from the server and tt can `send()` messsages.
+
+#### Constructor
+
+Creates a new client, but it does not connect until you call `client.connect()`. You can immediately
+attach listeners to the client instance.
+
+Possible signatures:
+  - `Client(options)`
+    * `options` (object, required) - The client configuration options
+      - `socketFile` (string, required): The path to the socket file to use to establish a connection.
+      - `retryDelay` (number, optional, default=1000) - The number of milliseconds to wait between connection attempts.
+      - `reconnectDelay` (number, optional, default=100) - The number of milliseconds to wait before automatically
+        reconnecting after an unexpected disconnect.
+
+#### `client.connect()`
+
+Tells the client to connect to the server. This is an async operation and the `connect` event will fire once the 
+a connection has been established.
+
+This may only be called **once** per instance. Calling this method a second time will result in an `Error`
+being thrown (note, the `error` event will not fire in this case).
+
+If the server is unavailable when the client attempts to connect, a `connectError` event will be fired and the client will
+automatically retry after a delay defined by the `options.retryDelay` value that was passed into the constructor. This
+cycle of a `connectError` event followed by a delayed retry will continue to happen until a connection is established or 
+until `client.close()` is called. If you want to limit the number of retries, you can count the `connectError` events and 
+call`client.close()` after some threshold. 
+
+Once connected, if an unexpected disconnect occurs (e.g. not an explicit call to `client.close()`) a `disconnect` event
+will be fired and the client will automatically start attempting to reconnect to the server. The connection process will
+occur as described above, including the automatic retry behavior. The only difference is that, once a new connection is
+established, a `reconnect` event will fire instead of a `connect` event.
+
+Possible signatures:
+  - `client.connect()`
+
+#### `client.send(topic, message)`
+
+Sends a message to the server. On the server-side, this message can be heard by listening for the `message` or the `message.`_`topic`_ event.
+
+Possible signatures:
+ - `client.send(topic, message)`
+   * `topic` (string, required) - The topic to publish the message under. If an empty value, `none` is
+     used as the value.
+   * `message` (*, required) - The message. May be any JSON serializable value (including `null`)
+      
+#### `client.close()`
+
+Permanently closes the connection. There will be no automatic reconnect attempts. This is an aysnchronous
+operation; the `close` event will fire after the close operation is complete.
+
+Once a client has been "closed", it can not reconnect. A new instance must be created. If you have a scenario that 
+requires clients to be routinely closed and restarted, a factory function can be effective for handling the client 
+setup.
+
+Possible signatures:
+  - `client.close()`
+
+#### Events
+
+  - `connectError` (error) - Fires when a connection attempt fails.
+    * `error` (Error) - The error that occurred.
+
+  - `connect` - Fires when the client establishes an **initial** connection with the server.
+
+  - `disconnect` - Fires when a client unexpectedly loses connection. This is distinct from the `close` event which 
+    indicates completion of a delibrate call to `client.close()`.
+
+  - `reconnect` - Fires when the client reestablishes a connection with the server after an unexpected disconnect.
+
+  - `message` (message, topic) - Fired whenever a message is received from the server, regardless of the `topic`.
+    * `message` (any) - The message from the server. This could be any JSON deserializable type (including `null`) 
+    * `topic` (string) - The topic of the message as declared by the server.
+
+  - `message.`_`topic`_ (message) - Fired whenever a message of a specific topic is received. This is a dynamic 
+    event type. If a message with the topic of `desserts` (yum) is receive, it would be published under the 
+    `message.desserts` event.
+    * `message` (any) - The message from the server. This could be any JSON deserializable type (including `null`) 
+    
+  - `messageError` (error) - Fires when a data is received, but could not be understood.
+    * `error` (MessageError) - The error containing the raw data that was received.
+    
+  - `close` - Fires when the client is fully closed after a call to `client.close()`.
 
   - `error` - Fires when an error occurs. `Node` provides special treatment of `error` events.
     * `error` (Error) - The error that occurred. 
