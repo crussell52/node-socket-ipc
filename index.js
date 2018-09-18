@@ -85,10 +85,10 @@ class MessageBuffer {
  * @fires message (message, topic, clientId)
  * @fires message.topic (message, clientId)
  * @fires connection (clientId)
- * @fires connectionClose (error, clientId)
+ * @fires connectionClose (had_error, clientId)
  * @fires listening
  * @fires messageError (error, clientId) 
- * @fires close (error)
+ * @fires close
  * @fires error (error)
  */
 class Server extends EventEmitter {
@@ -164,7 +164,7 @@ class Server extends EventEmitter {
                 this.emit('error', err);
             }
         });
-        this._server.on('close', err => this.emit('close', err) );
+        this._server.on('close', () => this.emit('close') );
 
         this._server.on('listening', () => {
             this.emit('listening');
@@ -178,10 +178,10 @@ class Server extends EventEmitter {
             this._clientLookup.set(id, socket);
 
             socket.setEncoding('utf8');
-            socket.on('close', err => {
+            socket.on('close', had_error => {
                 this._sockets.delete(socket);
                 this._clientLookup.delete(id);
-                this.emit('connectionClose', err, id);
+                this.emit('connectionClose', had_error, id);
             });
 
             this.emit('connection', id);
@@ -225,7 +225,8 @@ class Server extends EventEmitter {
 
     send(topic, message, clientId) {
         if (!this._clientLookup.has(clientId)) {
-            throw new Error(`Invalid client id: ${clientId}`);
+            this.emit(`error`, new Error(`Invalid client id: ${clientId}`));
+            return;
         }
 
         send(this._clientLookup.get(clientId), message, topic);
