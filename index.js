@@ -85,7 +85,7 @@ class MessageBuffer {
  * @fires message (message, topic, clientId)
  * @fires message.topic (message, clientId)
  * @fires connection (clientId)
- * @fires connectionClose (had_error, clientId)
+ * @fires connectionClose (clientId)
  * @fires listening
  * @fires messageError (error, clientId) 
  * @fires close
@@ -178,10 +178,10 @@ class Server extends EventEmitter {
             this._clientLookup.set(id, socket);
 
             socket.setEncoding('utf8');
-            socket.on('close', had_error => {
+            socket.on('close', () => {
                 this._sockets.delete(socket);
                 this._clientLookup.delete(id);
-                this.emit('connectionClose', had_error, id);
+                this.emit('connectionClose', id);
             });
 
             this.emit('connection', id);
@@ -236,8 +236,8 @@ class Server extends EventEmitter {
 /**
  * @fires connect
  * @fires connectError (error)
- * @fires disconnect (had_error)
- * @fires close (had_error)
+ * @fires disconnect 
+ * @fires close
  * @fires message (message, topic)
  * @fires message.topic (message)
  * @fires messageError (error) 
@@ -291,18 +291,18 @@ class Client extends EventEmitter {
             socket.on('error', (err) => this.emit('error', err));
             
             // Handle closed sockets.
-            socket.on('close', had_error => {
+            socket.on('close', () => {
                 // "Forget" the socket.
                 this._socket = null;
     
                 // See if this was an explicit close.
                 if (this._explicitClose) {
                     // Emit the "close" event.
-                    this.emit('close', had_error);
+                    this.emit('close');
                 } else {
                     // Announce the disconnect, then try to reconnect after a brief delay.
                     
-                    this.emit('disconnect', had_error);
+                    this.emit('disconnect');
                     this._reconnectDelayTimeoutId = setTimeout(() => this._connect(true), this._reconnectDelay);
                 }
             });

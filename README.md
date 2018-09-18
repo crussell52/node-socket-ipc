@@ -232,7 +232,7 @@ Possible signatures:
     * `error` (MessageError) - The error containing the raw data that was received.
     * `clientId` (number) - The id of the client that sent the bad data.
 
-  - `connectionClose` (had_error, clientId) - Fires when a client's connection closes.
+  - `connectionClose` (clientId) - Fires when a client's connection closes.
     * `clientId` (number) - The id of the client. Do not send messages to clients that have disconnected.
   
   - `close` - Fires when the server is closed and all connections have been ended.
