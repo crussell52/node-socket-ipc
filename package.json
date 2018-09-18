@@ -1,11 +1,12 @@
 {
   "name": "@crussell52/socket-ipc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An event-driven IPC implementation using unix file sockets.",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "crussell52@gmail.com",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": ["sockets", "ipc", "unix"]
 }
