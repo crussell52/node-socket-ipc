@@ -209,34 +209,42 @@ Possible signatures:
 
   - `listening` - Fires when the server is ready for incoming connections.
 
-  - `connection` (clientId) - Fires when a client connects to the server.
-    * `clientId` (number) - The id of the client. Use this to send a message to the client.
+  - `connection (clientId)` - Fires when a client connects to the server.
+    * `clientId` (`number`) - The id of the client. Use this to send a message to the client.
 
-  - `message` (message, topic, clientId) - Fired whenever a message is received from a client, regardless
+  - `message (message, topic, clientId)` - Fired whenever a message is received from a client, regardless
     of the `topic`.
-    * `message` (any) - The message from the client. This could be any JSON deserializable 
-      type (including `null`) 
-    * `topic` (string) - The topic of the message as declared by the client.
-    * `clientId` (number) - The id of the client. Use this to send a message to the client.
+    * `message` (`any`) - The message from the client. By default, this can be any JSON deserializable 
+      type (including `null`). By using of a custom _transcoder_ that can be expanded!
+    * `topic` (`string`) - The topic of the message as declared by the client.
+    * `clientId` (`number`) - The id of the client. Use this to send a message to the client.
 
-  - `message.`_`topic`_ (message, clientId) - Fired whenever a message of a specific topic is received. This
+  - `message.`_`topic`_` (message, topic, clientId)` - Fired whenever a message of a specific topic is received. This
     is a dynamic event type. If a message with the topic of `desserts` (yum) is receive, it would be published
     under the `message.desserts` event.
-    * `message` (any) - The message from the client. This could be any JSON deserializable 
-      type (including `null`) 
-    * `clientId` (number) - The id of the client. Use this to send a message to the client.
+    * `message` (`any`) - The message from the client. By default, this can be any JSON deserializable 
+      type (including `null`). By using of a custom _transcoder_ you control the type range!
+    * `clientId` (`number`) - The id of the client. Use this to send a message to the client.
 
-  - `messageError` (error, clientId ) - Fires when a data is received, but could not be understood.
-    * `error` (MessageError) - The error containing the raw data that was received.
-    * `clientId` (number) - The id of the client that sent the bad data.
-
-  - `connectionClose` (clientId) - Fires when a client's connection closes.
-    * `clientId` (number) - The id of the client. Do not send messages to clients that have disconnected.
+  - `connectionClose (clientId)` - Fires when a client's connection closes.
+    * `clientId` (`number`) - The id of the client. Do not send messages to clients that have disconnected.
   
   - `close` - Fires when the server is closed and all connections have been ended.
 
-  - `error` (error) - Fires when an error occurs. `Node` provides special treatment of `error` events.
-    * `error` (Error) - The error that occurred. 
+  - `error (error)` - Fires when an error occurs. `Node` provides special treatment of `error` events; if you do not
+    listen for this event, it will throw the `Error`. If this is the result of an error while decoding messages, the
+    connection to the client that sent the message will be closed.
+    * `error` (`Error`) - The error that occurred. If the error occurred while encoding a message, it will be an 
+      `EncodeError`. Similarly a decoding error will emit a `DecodeError`.
+      
+**Recent Changes**
+
+  - `v0.2.0`:
+    * The `messageError` event has been removed. The `error` event has been enhanced to emit an `EncodeError` or 
+      `DecodeError` to cover cases previously covered by `messageError`. This was done to simplify the code and API.
+    * Some `error` events would include a second, undocumented arg which provided the client id. This is no longer
+      the case.
+     
 
 ### Client
 
@@ -305,29 +313,39 @@ Possible signatures:
 
 #### Events
 
-  - `connectError` (error) - Fires when a connection attempt fails.
-    * `error` (Error) - The error that occurred.
+  - `connectError (error)` - Fires when a connection attempt fails and a connection retry is queued.
+    * `error` (`Error`) - The error that occurred.
 
   - `connect` - Fires when the client establishes an **initial** connection with the server.
 
   - `disconnect` - Fires when a client unexpectedly loses connection. This is distinct from the `close` event which 
-    indicates completion of a delibrate call to `client.close()`.
+    indicates completion of a deliberate call to `client.close()`.
 
   - `reconnect` - Fires when the client reestablishes a connection with the server after an unexpected disconnect.
 
-  - `message` (message, topic) - Fired whenever a message is received from the server, regardless of the `topic`.
-    * `message` (any) - The message from the server. This could be any JSON deserializable type (including `null`) 
+  - `message (message, topic)` - Fired whenever a message is received from the server, regardless of the `topic`.
+    * `message` (`any`) - The message from the client. By default, this can be any JSON deserializable 
+      type (including `null`). By using of a custom _transcoder_ you control the type range! 
     * `topic` (string) - The topic of the message as declared by the server.
 
-  - `message.`_`topic`_ (message) - Fired whenever a message of a specific topic is received. This is a dynamic 
-    event type. If a message with the topic of `desserts` (yum) is receive, it would be published under the 
-    `message.desserts` event.
-    * `message` (any) - The message from the server. This could be any JSON deserializable type (including `null`) 
-    
-  - `messageError` (error) - Fires when a data is received, but could not be understood.
-    * `error` (MessageError) - The error containing the raw data that was received.
+  - `message.`_`topic`_` (message, topic, clientId)` - Fired whenever a message of a specific topic is received. This
+    is a dynamic event type. If a message with the topic of `desserts` (yum) is receive, it would be published
+    under the `message.desserts` event.
+    * `message` (`any`) - The message from the client. By default, this can be any JSON deserializable
+    type (including `null`). By using of a custom _transcoder_ you control the type range! 
     
   - `close` - Fires when the client is fully closed after a call to `client.close()`.
 
-  - `error` - Fires when an error occurs. `Node` provides special treatment of `error` events.
-    * `error` (Error) - The error that occurred. 
+  - `error (error)` - Fires when an error occurs. `Node` provides special treatment of `error` events; if you do not
+    listen for this event, it will throw the `Error`. If this is the result of an error while decoding messages, the
+    connection to the server that sent the message will be closed.
+    * `error` (`Error`) - The error that occurred. If the error occurred while encoding a message, it will be an 
+      `EncodeError`. Similarly a decoding error will emit a `DecodeError`.
+    
+**Recent Changes**
+
+  - `v0.2.0`:
+    * The `messageError` event has been removed. The `error` event has been enhanced to emit an `EncodeError` or 
+      `DecodeError` to cover cases previously covered by `messageError`. This was done to simplify the code and API.
+    * Some `error` events would include a second, undocumented arg which provided the client id. This is no longer
+      the case.
