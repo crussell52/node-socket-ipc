@@ -1,23 +1,31 @@
-# `@crussell52/socket-ipc`
+# About
 
-An event-driven IPC implementation using unix file sockets.
+An event-driven IPC implementation for NodeJS using unix file sockets
 
-[Documentation Page](https://crussell52.github.io/node-socket-ipc/)
+[Docs](https://crussell52.github.io/node-socket-ipc/) |
+[Source](https://github.com/crussell52/node-socket-ipc/) |
+[Releases](https://github.com/crussell52/node-socket-ipc/releases) |
+[NPM](https://www.npmjs.com/package/@crussell52/socket-ipc)
 
-## Contents
+## Table of Contents
  
-- [About](/README.md)
-  * [Quick Start](#quick-start)
-    - [Install](#install)
-    - [A Simple Example](#a-simple-example)
-    - [More Examples](#more-examples)
-  * [Limitations](#limitations)
-  * [Why another IPC lib?](#why-another-ipc-lib)
-    - [A Strong Alternative](#a-strong-alternative)
-    - [Why is this one different?](#why-is-this-one-different)
+### [About](/) (you are here)
+- [Quick Start](#quick-start)
+  * [Install](#install)
+  * [A Simple Example](#a-simple-example)
+  * [More Examples](#more-examples)
+- [Limitations](#limitations)
+- [Why another IPC lib?](#why-another-ipc-lib)
+  * [A Strong Alternative](#a-strong-alternative)
+  * [Why is this one different?](why-is-this-one-different)
     
-- [API](/docs/API.md)
+#### [Usage](/docs/USAGE.md)
+
+#### [Advanced Usage](/docs/ADVANCED.md)
+    
+#### [API](/docs/API.md)
   
+# About  
 
 ## Quick Start
 

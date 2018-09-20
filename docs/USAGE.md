@@ -24,5 +24,11 @@ module's documentation. Like any good module, `socket-ipc` tries to hide this co
 and running fast. But if this is your first time stepping into this territory, it might still be worth the effort to
 learn a bit about them.  
 
+## Automatic Retry
+
+## Automatic Reconnect
+
+## Working with client ids
+
 ## Throughput
 
