@@ -19,15 +19,17 @@ const {Server} = require('../../src/index');
 
 const SOCKET_FILE = undefined;
 
-
+let server;
 let newServerTimeout;
+let serverCloseTimeout;
 let nextServerNum = 1;
+let shuttingDown = false;
 function createServer() {
     clearTimeout(newServerTimeout);
     const serverNum = nextServerNum++;
     console.log(`creating server (${serverNum})`);
     
-    const server = new Server({socketFile: SOCKET_FILE});
+    server = new Server({socketFile: SOCKET_FILE});
     server.on('connectionClose', (clientId) => console.log(`Client (${clientId}) disconnected`));
     server.on('listening', () => console.log(`server (${serverNum}) is listening`));
     server.on('connection', (clientId) => {
@@ -39,12 +41,21 @@ function createServer() {
     // After the first client connects, start a time to shut down the server.
     // This will show what happens to the client(s) when a server disappears.
     server.once('connection', () => {
+        if (shuttingDown) {
+            return;
+        }
+
         console.log(`Server (${serverNum}) will shut down in 10 second.`);
-        setTimeout(() => server.close(), 10000);
+        clearTimeout(serverCloseTimeout);
+        serverCloseTimeout = setTimeout(() => server.close(), 10000);
     });
 
     // When the server closes, auto-spawn a new one after a second.
     server.on('close', () => {
+        if (shuttingDown) {
+            return;
+        }
+
         console.log(`server (${serverNum}) closed. Starting a replacement server in 5 second.`);
         newServerTimeout = setTimeout(() => createServer(), 5000);
     });
@@ -54,3 +65,17 @@ function createServer() {
 }
 
 createServer();
+
+
+
+function shutdown(reason) {
+    // Stop all processing and let node naturally exit.
+    console.log('shutting down: ', reason);
+    shuttingDown = true;
+    clearTimeout(newServerTimeout);
+    clearTimeout(serverCloseTimeout);
+    server.close();
+}
+
+process.on('SIGTERM', () => shutdown('sigterm'));
+process.on('SIGINT', () => shutdown('sigint'));

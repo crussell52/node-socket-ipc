@@ -22,3 +22,13 @@ client.on('disconnect', () => console.log('disconnected from server'));
 client.on('reconnect', () => console.log('reconnected to server'));
 client.on('message', (message, topic) => console.log(`Heard: [${topic}]`, message));
 client.connect();
+
+
+function shutdown(reason) {
+    // Stop all processing and let node naturally exit.
+    console.log('shutting down: ', reason);
+    client.close();
+}
+
+process.on('SIGTERM', () => shutdown('sigterm'));
+process.on('SIGINT', () => shutdown('sigint'));
