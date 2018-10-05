@@ -2,7 +2,7 @@
   "name": "@crussell52/socket-ipc",
   "version": "0.2.0",
   "description": "An event-driven IPC implementation using unix file sockets.",
-  "keywords": ["sockets", "ipc", "unix"],
+  "keywords": ["ipc", "interprocess", "messages", "communication", "sockets", "event", "unix", "mac", "linux"],
   "homepage": "https://crussell52.github.io/node-socket-ipc/",
   "bugs": {
     "url": "https://github.com/crussell52/node-socket-ipc/issues"
