@@ -1,24 +1,109 @@
-# @crussell52/socket-ipc
-An event-driven IPC implementation using unix file sockets.
+# About
+
+An event-driven IPC implementation for NodeJS using unix file sockets
+
+[Docs](https://crussell52.github.io/node-socket-ipc/) |
+[Source](https://github.com/crussell52/node-socket-ipc/) |
+[Releases](https://github.com/crussell52/node-socket-ipc/releases) |
+[NPM](https://www.npmjs.com/package/@crussell52/socket-ipc)
+
+## Table of Contents
+ 
+### [About](/) (you are here)
+- [Quick Start](#quick-start)
+  * [Install](#install)
+  * [A Simple Example](#a-simple-example)
+  * [More Examples](#more-examples)
+- [Limitations](#limitations)
+- [Why another IPC lib?](#why-another-ipc-lib)
+  * [A Strong Alternative](#a-strong-alternative)
+  * [Why is this one different?](why-is-this-one-different)
+    
+#### [Usage](/docs/USAGE.md)
+
+#### [Advanced Usage](/docs/ADVANCED.md)
+    
+#### [API](/docs/API.md)
+  
+# About  
+
+## Quick Start
+
+Want to get up and running quickly? This is for you.
+
+### Install
+
+```
+npm install --save @crussell52/socket-ipc
+```
+
+### A Simple Example
+
+Client:
+```js
+const {Client} = require('@crussell52/socket-ipc');
+const client = new Client({socketFile: '/tmp/myApp.sock'});
+
+// Say hello as soon as we connect to the server with a simple message
+// that give it our name.
+client.on('connect', () => client.send('hello', {name: 'crussell52'}));
+
+// Connect. It will auto-retry if the connection fails and auto-reconnect if the connection drops.
+client.connect();
+```
+
+Server:
+```js
+const {Server} = require('@crussell52/socket-ipc');
+const server = new Server({socketFile: '/tmp/myApp.sock'});
+
+// Listen for errors so they don't bubble up and kill the app.
+server.on('error', err => console.error('IPC Server Error!', err));
+
+// Log all messages. Topics are completely up to the sender!
+server.on('message', (message, topic) => console.log(topic, message));
+
+// Say hello back to anybody that sends a message with the "hello" topic. 
+server.on('message.hello', (message, clientId) => server.send('hello', `Hello, ${message.name}!`, clientId));
+
+// Start listening for connections.
+server.listen();
+
+// Always clean up when you are ready to shut down your app to clean up socket files. If the app
+// closes unexpectedly, the server will try to "reclaim" the socket file on the next start.
+function shutdown() {
+    server.close();
+}
+```
+
+### More Examples
+
+Check out the `/examples` directory in the [source](https://github.com/crussell52/node-socket-ipc) for more
+code samples. (Make sure you set the `SOCKET_FILE` constant at the top of the example files before you run them!)
 
 ## Limitations
 
-Let's start with what this lib can't do so you can move on if it isn't a good fit for your project.
+Let's get this out of the way early...
 
-Supports:
+Requires:
   - NodeJS >= 8.x LTS (might work with perfectly fine with some older versions -- but not tested)
+
+Transport Support:  
   - Unix socket files (might work with windows socket files too -- but not tested)
 
-Doesn't Support:
+Unsupported Features:
   - TCP Sockets
   - UDP Sockets
   - Windows socket files (well *maybe* it does, I haven't tried )
   - Native client-to-client communication (although you could implement it!)
+  
+Love the project, but you need it to do something it doesn't? Open up a 
+[feature request](https://github.com/crussell52/node-socket-ipc)!
 
 ## Why another IPC lib?
 
-I had a need for high speed IPC. Simply put, I went looking at the IPC libraries that were
-currently published and struggled to find one that met my needs.
+I had a need for high speed IPC. I went looking at the IPC modules that were available and found a LOT of them. None
+of them really met my needs...
 
 In some cases, they were bound to specific message formats:
  - [avsc](https://www.npmjs.com/package/avsc) (implements the Avro specification) 
@@ -32,7 +117,7 @@ Several were linked to specific technologies:
  - [python-bridge](https://www.npmjs.com/package/python-bridge) (Python)
  - [node-jet](https://www.npmjs.com/package/node-jet) (jetbus.io)
 
- A few others covered specific use cases:
+A few others covered specific use cases:
  * [ipc-event-emitter](https://www.npmjs.com/package/ipc-event-emitter) (Node Subprocesses)
 
 Etc...
@@ -40,7 +125,7 @@ Etc...
 So, like the 50 billion other authors, I chose to make my own. Not because I thought any of the others were particularily 
 _bad_, but they did not seem to meet _my_ goals for IPC.
 
-## A strong alternative
+### A strong alternative
 
 I have to give a shoutout to [node-ipc](https://www.npmjs.com/package/node-ipc). It offers a very robust IPC implementation 
 which checks a lot of the boxes when compared against my humble lib's goals **and** covers many more transport protocols. You
@@ -50,284 +135,24 @@ _For me_, `node-ipc` did not make sense to use for a number of reasons. Upon rev
 more complexity than I need (a tough combination). I also struggle with its choice in licensing. That said, it's mere existence
 **did** make me _seriously_ wonder whether or not I should bother publishing this library. (Obviously I decided it was worth it!)
 
-## Why is this one different?
+### Why is this one different?
 
 I can't say that it is different than *all* of the others -- there really are a lot of projects tagged as IPC and I honestly didn't
 review them all. But from what I was able to review, I did feel like this one is worth adding to the pile... 
 
 Here are the goals:
 
-- Simple server/client, bi-direction communication over Unix sockets (maybe other transports, one day)
+- Bidirectional communication over Unix sockets (maybe other transports, in the future)
 - Simple interface for sending messages:
   * From the server to a specific client
   * From the server to all clients (broadcast)
   * From any client to the server
-- Event driven, using native NodeJS `EventEmitter`
-- Ability to listen for all messages or messages related to a specific "topic"
-- Client resiliency (automatic reconnection, automatic connection retry)
-- Generic enough that specific implementations can be built around it
-
-# Usage
-
-Phew... Sorry it took so long to get here. IPC is a crowded space and I thought that background was important.
-
-## Quick Start
-
-Server:
-```js
-const {Server} = require('@crussell52/socket-ipc');
-const server = new Server({socketFile: '/tmp/myApp.sock'});
-
-// Log all messages. Topics are completely up to the sender!
-server.on('message', (message, topic) => console.log(topic, message));
-
-// Say hello back to anybody that sends a message with the "hello" topic. 
-// The recevier has complete control over which topics they listen to!
-server.on('message.hello', (message, clientId) => {
-    server.send('hello', `Hello, ${message.name}!`, clientId);
-});
-
-// Start listening for clients.
-server.listen();
-
-//...
-function shutdown() {
-    // Shutdown the server with your app to clean up the socket file!
-    // If you crash without doing cleanup, don't worry. The server will
-    // "reclaim" (delete + recreate) abandoned socket files.
-    server.close();
-}
-```
-Client:
-```js
-const {Client} = require('@crussell52/socket-ipc');
-const client = new Client({socketFile: '/tmp/myApp.sock'});
-
-// Say hello as soon as we connect to the server.
-client.on('connect', () => {
-    // Message is whatever your application needs it to be!
-    // Here, we are telling the server our name.
-    client.send('hello', {name: 'crussell52'});
-});
-
-// Start the connection. If the server isn't up yet, that's okay. 
-// There is a built in auto-retry. If the server drops after you
-// connect, that's okay too; the client will stubbornly attempt
-// to reconnect.
-client.connect();
-```
-
-## More Examples
-
-Check out the `/examples` directory of the source code for more samples!
-
-## A note about security
-
-Unix socket files exist on the file system. This library does not provide any special handling of their
-creation; it leaves that up to the expert: the [NodeJs net module](https://nodejs.org/api/net.html). In fact, 
-that page has a section dedicated to Node's [IPC support](https://nodejs.org/api/net.html#net_ipc_support)
-that you should probably read, if you are not already famliar with it.
-
-Because they are files, they are subject to permissions. Make sure you understand how those permissions work 
-for sockets on your target OS. Use approriate caution to not expose your application's messages to unintended
-audiences **or expose your application to messages from unintended clients!**.
-
-## API
-
-Here are the full details of this the `@crussell52/socket-ipc` API.
-
-### Server
-
-This library follows a standard server/client pattern. There is one server which listens for connections
-from one or more clients.  Intuitively, the `Server` class provides the interface for establishing the
-server side of the equation.
-
-The server can receive messages from any of the clients. It can also `send()` messsages to a specific client
-or it can `broadcast()` a message to all connected clients.
-
-#### Constructor
-
-Creates a new server, but it does not start listening until you call `server.listen()`. You can immediately
-attach listeners to the server instance.
-
-Possible signatures:
-  - `Server(options)`
-    * `options` (object, required) - The server configuration options
-      - `socketFile` (string, required): The path to the socket file to use when it is told to "listen". See 
-        `server.listen()` for more details on how this file is handled.
-
-
-#### `server.listen()`
-
-Tells the server to start listening for client connections. This is an async operation and the `listening` 
-event will fire once the server is ready for connections.
-
-This may only be called **once** per instance. Calling this method a second time will result in an `Error`
-being thrown (note, the `error` event will not fire in this case).
-
-Possible signatures:
-  - `server.listen()`
-
-#### `server.send(topic, message, clientId)`
-
-Sends a message to a specific, connected, client. On the client-side, this message can be heard by
-listening for the `message` or the `message.`_`topic`_ event.
-
-Possible signatures:
- - `server.send(topic, message, clientId)`
-   * `topic` (string, required) - The topic to publish the message under. If an empty value, `none` is
-     used as the value.
-   * `message` (*, required) - The message. May be any JSON serializable value (including `null`)
-   * `clientId` (number, required) - The id of the client to send the message to. This is usually
-     obtained by capturing it when the client connects or sends the server a message. Attempting to
-     send to a clientId which does not exist will fire an `error` event.
-
-#### `server.broadcast(topic, message)`
-
-Sends a message to **all** connected clients. On the client-side, this message can be heard by
-listening for the `message` or the `message.`_`topic`_ event.
-
-Possible signatures:
- - `server.broadcast(topic, message)`
-   * `topic` (string, required) - The topic to publish the message under. If an empty value, `none` is
-     used as the value.
-   * `message` (any, required) - The message. May be any JSON serializable value (including `null`)
-   
-#### `server.close()`
-
-Closes all active connections and stops listening for new connections. This is an asynchronous 
-operation. Once the server is fully closed, the `close` event will be fired.
-
-Once a server has been "closed", it can not start listening again. A new instance must be created. If
-you have a scenario that requires servers to be routinely closed and restarted, a factory function can be
-effective for handling the server setup.
-
-Possible signatures:
-  - `server.close()`
-
-#### Events
-
-  - `listening` - Fires when the server is ready for incoming connections.
-
-  - `connection` (clientId) - Fires when a client connects to the server.
-    * `clientId` (number) - The id of the client. Use this to send a message to the client.
-
-  - `message` (message, topic, clientId) - Fired whenever a message is received from a client, regardless
-    of the `topic`.
-    * `message` (any) - The message from the client. This could be any JSON deserializable 
-      type (including `null`) 
-    * `topic` (string) - The topic of the message as declared by the client.
-    * `clientId` (number) - The id of the client. Use this to send a message to the client.
-
-  - `message.`_`topic`_ (message, clientId) - Fired whenever a message of a specific topic is received. This
-    is a dynamic event type. If a message with the topic of `desserts` (yum) is receive, it would be published
-    under the `message.desserts` event.
-    * `message` (any) - The message from the client. This could be any JSON deserializable 
-      type (including `null`) 
-    * `clientId` (number) - The id of the client. Use this to send a message to the client.
-
-  - `messageError` (error, clientId ) - Fires when a data is received, but could not be understood.
-    * `error` (MessageError) - The error containing the raw data that was received.
-    * `clientId` (number) - The id of the client that sent the bad data.
-
-  - `connectionClose` (clientId) - Fires when a client's connection closes.
-    * `clientId` (number) - The id of the client. Do not send messages to clients that have disconnected.
-  
-  - `close` - Fires when the server is closed and all connections have been ended.
-
-  - `error` (error) - Fires when an error occurs. `Node` provides special treatment of `error` events.
-    * `error` (Error) - The error that occurred. 
-
-### Client
-
-This library follows a standard server/client pattern. There is one server which listens for connections
-from one or more clients.  Intuitively, the `Client` class provides the interface for establishing the
-client side of the equation.
-
-The client can receive messages from the server and tt can `send()` messsages.
-
-#### Constructor
-
-Creates a new client, but it does not connect until you call `client.connect()`. You can immediately
-attach listeners to the client instance.
-
-Possible signatures:
-  - `Client(options)`
-    * `options` (object, required) - The client configuration options
-      - `socketFile` (string, required): The path to the socket file to use to establish a connection.
-      - `retryDelay` (number, optional, default=1000) - The number of milliseconds to wait between connection attempts.
-      - `reconnectDelay` (number, optional, default=100) - The number of milliseconds to wait before automatically
-        reconnecting after an unexpected disconnect.
-
-#### `client.connect()`
-
-Tells the client to connect to the server. This is an async operation and the `connect` event will fire once the 
-a connection has been established.
-
-This may only be called **once** per instance. Calling this method a second time will result in an `Error`
-being thrown (note, the `error` event will not fire in this case).
-
-If the server is unavailable when the client attempts to connect, a `connectError` event will be fired and the client will
-automatically retry after a delay defined by the `options.retryDelay` value that was passed into the constructor. This
-cycle of a `connectError` event followed by a delayed retry will continue to happen until a connection is established or 
-until `client.close()` is called. If you want to limit the number of retries, you can count the `connectError` events and 
-call`client.close()` after some threshold. 
-
-Once connected, if an unexpected disconnect occurs (e.g. not an explicit call to `client.close()`) a `disconnect` event
-will be fired and the client will automatically start attempting to reconnect to the server. The connection process will
-occur as described above, including the automatic retry behavior. The only difference is that, once a new connection is
-established, a `reconnect` event will fire instead of a `connect` event.
-
-Possible signatures:
-  - `client.connect()`
-
-#### `client.send(topic, message)`
-
-Sends a message to the server. On the server-side, this message can be heard by listening for the `message` or the `message.`_`topic`_ event.
-
-Possible signatures:
- - `client.send(topic, message)`
-   * `topic` (string, required) - The topic to publish the message under. If an empty value, `none` is
-     used as the value.
-   * `message` (*, required) - The message. May be any JSON serializable value (including `null`)
-      
-#### `client.close()`
-
-Permanently closes the connection. There will be no automatic reconnect attempts. This is an aysnchronous
-operation; the `close` event will fire after the close operation is complete.
-
-Once a client has been "closed", it can not reconnect. A new instance must be created. If you have a scenario that 
-requires clients to be routinely closed and restarted, a factory function can be effective for handling the client 
-setup.
-
-Possible signatures:
-  - `client.close()`
-
-#### Events
-
-  - `connectError` (error) - Fires when a connection attempt fails.
-    * `error` (Error) - The error that occurred.
-
-  - `connect` - Fires when the client establishes an **initial** connection with the server.
-
-  - `disconnect` - Fires when a client unexpectedly loses connection. This is distinct from the `close` event which 
-    indicates completion of a delibrate call to `client.close()`.
-
-  - `reconnect` - Fires when the client reestablishes a connection with the server after an unexpected disconnect.
-
-  - `message` (message, topic) - Fired whenever a message is received from the server, regardless of the `topic`.
-    * `message` (any) - The message from the server. This could be any JSON deserializable type (including `null`) 
-    * `topic` (string) - The topic of the message as declared by the server.
-
-  - `message.`_`topic`_ (message) - Fired whenever a message of a specific topic is received. This is a dynamic 
-    event type. If a message with the topic of `desserts` (yum) is receive, it would be published under the 
-    `message.desserts` event.
-    * `message` (any) - The message from the server. This could be any JSON deserializable type (including `null`) 
-    
-  - `messageError` (error) - Fires when a data is received, but could not be understood.
-    * `error` (MessageError) - The error containing the raw data that was received.
-    
-  - `close` - Fires when the client is fully closed after a call to `client.close()`.
-
-  - `error` - Fires when an error occurs. `Node` provides special treatment of `error` events.
-    * `error` (Error) - The error that occurred. 
+- Minimize dependencies (So far, `0`!). They may creep in where they make sense, but I'm looking to raw NodeJS
+  for solutions, _first_.
+- Event driven (using native NodeJS `EventEmitter`)
+- Ability to listen for _all_ messages or to narrow in on specific _topics_.
+- Built-in client resiliency (automatic reconnection, automatic connection retry)
+- Extensible design: 
+  * _Pluggable_ where it makes sense
+  * Stable API with thorough docs to make wrapping or extending easy
+  * Leave domain details to the domain experts

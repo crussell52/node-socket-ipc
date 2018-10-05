@@ -1,6 +1,6 @@
 {
   "name": "@crussell52/socket-ipc",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "An event-driven IPC implementation using unix file sockets.",
   "keywords": ["sockets", "ipc", "unix"],
   "homepage": "https://crussell52.github.io/node-socket-ipc/",
