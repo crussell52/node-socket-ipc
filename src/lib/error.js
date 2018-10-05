@@ -14,21 +14,52 @@ class DecodeError extends Error {
     constructor(errorMessage, rawData) {
         super(errorMessage);
         this.rawData = rawData;
+        this.clientId = clientId;
     }
 }
 
-class EncodeError extends Error {
+class SendError extends Error {
     /**
-     * @param {string} errorMessage - A description of what happened.
-     * @param {MessageWrapper} messageWrapper - The message which failed to encode and its topic.
+     * @param {string} errorMessage - A description of what went wrong.
+     * @param {*} message - The message being sent.
+     * @param {string} topic - The topic of the message being sent.
      */
-    constructor(errorMessage, messageWrapper) {
+    constructor(errorMessage, message, topic) {
         super(errorMessage);
-        this.topic = messageWrapper.topic;
-        this.message = messageWrapper.message;
+        this.sentTopic = topic;
+        this.sentMessage = message;
+    }
+}
+
+class SendAfterCloseError extends SendError { }
+class NoServerError extends SendError { }
+
+class BadClientError extends SendError {
+    /**
+     * @param {string} errorMessage - A description of what went wrong.
+     * @param {*} message - The message being sent.
+     * @param {string} topic - The topic of the message being sent.
+     * @param {string} clientId - The client id which is invalid.
+     */
+    constructor(errorMessage, message, topic, clientId) {
+        super(errorMessage, message, topic);
+        this.clientId = clientId;
+    }
+}
+
+/**
+ * Indicates that an error happened during the encoding phase of sending a message.
+ */
+class EncodeError extends SendError {
+    /**
+     * @param {string} errorMessage - A description of what went wrong.
+     * @param {MessageWrapper} msgWrapper - The message being sent and its topic.
+     */
+    constructor(errorMessage, msgWrapper) {
+        super(errorMessage, msgWrapper.message, msgWrapper.topic);
     }
 }
 
 module.exports = {
-    EncodeError, DecodeError
+    EncodeError, DecodeError, SendError, SendAfterCloseError, NoServerError, BadClientError
 };
