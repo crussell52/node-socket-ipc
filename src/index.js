@@ -10,7 +10,7 @@ const {EventEmitter} = require('events');
 const net = require('net');
 const fs = require('fs');
 const jsonTranscoder = require('./lib/transcoder/jsonTranscoder');
-const {MessageError} = require('./lib/error');
+const {MessageError, SendAfterCloseError, BadClientError, NoServerError} = require('./lib/error');
 
 /**
  * @interface MessageWrapper
@@ -115,7 +115,7 @@ const validateSocketFileOption = (value) => {
  * @param {Socket} socket - The socket to listen to.
  * @param {EventEmitter} emitter - Where to emit events from.
  * @param {Transcoder} transcoder - The transcoder to use.
- * @param {int} [clientId] - Only relevant in the server context. The id of the client the socket is attached to.
+ * @param {string} [clientId] - Only relevant in the server context. The id of the client the socket is attached to.
  */
 const attachDataListener = (socket, emitter, transcoder, clientId) => {
 
@@ -217,7 +217,6 @@ class Server extends EventEmitter {
                     } catch (unlinkErr) {
                         // Nope... unlink failed. Possibly because we don't have the perms to remove the sock.
                         // Emit the original error.
-                        console.log('no unlink for you!', unlinkErr);
                         this.emit('error', err);
                         return;
                     }
@@ -237,18 +236,23 @@ class Server extends EventEmitter {
         
         this._server.on('connection', socket => {
             
-            const id = this._nextClientId++;
+            const id = '' + this._nextClientId++; // Number, but treat it as a string!
             this._sockets.set(socket, id);
             this._clientLookup.set(id, socket);
 
-            socket.setEncoding(this._transcoder.socketEncoding);
-            socket.on('close', () => {
+            const forgetClient = () => {
+                // "Forget" about this client"
                 this._sockets.delete(socket);
                 this._clientLookup.delete(id);
-                this.emit('connectionClose', id);
-            });
+            };
 
-            this.emit('connection', id);
+            socket.setEncoding(this._transcoder.socketEncoding);
+
+            // Forget the client on both end and close.
+            socket.on('end', forgetClient);
+            socket.on('close', forgetClient);
+
+            this.emit('connection', id, socket);
 
             // Listen for messages on the socket.
             attachDataListener(socket, this, this._transcoder, id);
@@ -258,34 +262,56 @@ class Server extends EventEmitter {
     }
 
     close() {
-        // Close the server to stop incoming connections, then destroy all known sockets.   
+        // A second close does nothing.
+        if (this._closeCalled) {
+            return;
+        }
+
+        // Close the server to stop incoming connections, then end all known sockets.
+        this._closeCalled = true;
         this._server.close();
         this._sockets.forEach((id, socket) => {
-             socket.destroy();
+             socket.end();
         });        
     }
 
     broadcast(topic, message) {
-        // Encode once, send many
+        // Refuse if close has been called.
+        if (this._closeCalled) {
+            this.emit(`error`,
+                new SendAfterCloseError(`Can not '.broadcast()' after '.close()'`, message, topic));
+            return;
+        }
+
+        // Encode it once.
         this._encoder({topic, message}, (err, data) => {
             if (err) {
                 this.emit('error', err);
-                return;
+            } else {
+                // Broadcast the message to all known sockets.
+                this._sockets.forEach((id, socket) => {
+                    socket.write(data)
+                });
             }
-
-            // Broadcast the message to all known sockets.
-            this._sockets.forEach((id, socket) => {
-                socket.write(data)
-            });
         });
     }
 
     send(topic, message, clientId) {
-        if (!this._clientLookup.has(clientId)) {
-            this.emit(`error`, new Error(`Invalid client id: ${clientId}`));
+        // Refuse if close has been called.
+        if (this._closeCalled) {
+            this.emit(`error`,
+                new SendAfterCloseError(`Can not '.send()' after '.close()'`, message, topic));
             return;
         }
 
+        // Refuse if we don't recognize the client id. This could be because it never existed or because the client
+        // disconnected.
+        if (!this._clientLookup.has(clientId)) {
+            this.emit(`error`, new BadClientError(`Invalid client id: ${clientId}`, message, topic, clientId));
+            return;
+        }
+
+        // Get the socket and send data to it.
         const socket = this._clientLookup.get(clientId);
         this._encoder({topic, message}, (err, data) => {
             if (err) {
@@ -345,24 +371,37 @@ class Client extends EventEmitter {
 
         socket.on('connect', () => {
             this._socket = socket;
-            isReconnect ? this.emit('reconnect') : this.emit('connect');
-            
+
+            // Always emit a connect event. Conditionally, also emit a reconnect event.
+            this.emit('connect', socket);
+            if (isReconnect) {
+                this.emit('reconnect', socket);
+            }
+
             // Swap out the connection error handling for standard error handling.
             socket.removeListener('error', handleConnectError);
-            socket.on('error', (err) => this.emit('error', err));
-            
-            // Handle closed sockets.
-            socket.on('close', () => {
-                // "Forget" the socket.
+            socket.on('error', (err) => this.emit('error', err)); // Just repeat socket errors
+
+            // As soon as the socket emits an end event, we "forget" about the socket so that no more messages
+            // can be sent to it. However, anything in the buffer may still be until we hear the `close` event.
+            socket.on('end', () => {
                 this._socket = null;
-    
+            });
+
+            // We don't start reconnection logic until the socket finishes closing. This makes sure that any messages
+            // previously put into the buffer get time to flush before we start putting more data on the wire.
+            socket.on('close', () => {
+
+                // Make sure we have "forgotten" the socket. This helps cases where `close` happens without `end` which
+                // seems to happen in abrupt disconnect scenarios.
+                this._socket = null;
+
                 // See if this was an explicit close.
                 if (this._explicitClose) {
-                    // Emit the "close" event.
-                    this.emit('close');
+                    // Emit the "closed" event.
+                    this.emit('closed');
                 } else {
-                    // Announce the disconnect, then try to reconnect after a brief delay.
-                    
+                    // Announce the disconnect, then try to reconnect after a configured delay.
                     this.emit('disconnect');
                     this._reconnectDelayTimeoutId = setTimeout(() => this._connect(true), this._reconnectDelay);
                 }
@@ -379,11 +418,24 @@ class Client extends EventEmitter {
         clearTimeout(this._retryTimeoutId);
         clearTimeout(this._reconnectDelayTimeoutId);
         if (this._socket) {
-            this._socket.close();
+            this._socket.end();
         }
     }
 
     send(topic, message) {
+        // Refuse to send once client was explicitly closed.
+        if (this._explicitClose) {
+            this.emit('error', new SendAfterCloseError(`Can not 'send()' after 'close()'.`, message, topic));
+            return;
+        }
+
+        // Refuse to send if we don't have an active connection.
+        if (!this._socket) {
+            this.emit('error', new NoServerError(`Can not send, no active server connection.`, message, topic))
+            return;
+        }
+
+        // Encode, then write to the socket if everything went okay.
         this._encoder({topic, message}, (err, data) => {
             if (err) {
                 this.emit('error', err);
@@ -392,7 +444,6 @@ class Client extends EventEmitter {
             }
         });
     }
-
 }
 
 module.exports = {
