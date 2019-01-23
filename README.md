@@ -100,40 +100,23 @@ Love the project, but you need it to do something it doesn't? Open up a
 
 ## Why another IPC lib?
 
-I had a need for high speed IPC. I went looking at the IPC modules that were available and found a LOT of them. None
-of them really met my needs...
+I had a need for a simple, _relatively_ high speed IPC. I went looking at the IPC modules that were available and found a LOT of them. None of them really met my needs. Most were bound to specific message formats or specific platforms. None met my immediate needs. So I did the only rational thing, made my own.
 
-In some cases, they were bound to specific message formats:
- - [avsc](https://www.npmjs.com/package/avsc) (implements the Avro specification) 
- - [json-ipc-lib](https://www.npmjs.com/package/json-ipc-lib) (implements JSON-RPC 2.0)
- - [BOSCAR](https://www.npmjs.com/package/boscar) (JSON-RPM 2.0 subset)
+## Alternatives
 
-Several were linked to specific technologies:
- - [redux-electron-ipc](https://www.npmjs.com/package/redux-electron-ipc) (Electron)
- - [electron-ipc-responder](https://www.npmjs.com/package/electron-ipc-responder) (Electron)
- - [pg-ipc](https://www.npmjs.com/package/pg-ipc) (PostgreSQL)
- - [python-bridge](https://www.npmjs.com/package/python-bridge) (Python)
- - [node-jet](https://www.npmjs.com/package/node-jet) (jetbus.io)
+This library is not particularly novel, and strong alternatives certainly exist. It is simple, it is transparent, it is purely nodejs, and it is pretty darn fast. It is (by far) not: the most battle tested, the most robust in terms of supported protocls and platforms, nor the fastest way to push messages around.
 
-A few others covered specific use cases:
- * [ipc-event-emitter](https://www.npmjs.com/package/ipc-event-emitter) (Node Subprocesses)
+### ZeroMQ
 
-Etc...
+It's tough to beat zeroMQ for performance or cross-language support. There are bindings for many languages ([including node](https://github.com/zeromq/zeromq.js).
 
-So, like the 50 billion other authors, I chose to make my own. Not because I thought any of the others were particularily 
-_bad_, but they did not seem to meet _my_ goals for IPC.
+### node-ipc
 
-### A strong alternative
+[node-ipc](https://www.npmjs.com/package/node-ipc) offers a robust, pure node IPC implementation. It is very popular (173k+ weekly downloads).
 
-I have to give a shoutout to [node-ipc](https://www.npmjs.com/package/node-ipc). It offers a very robust IPC implementation 
-which checks a lot of the boxes when compared against my humble lib's goals **and** covers many more transport protocols. You
-should **seriously** check that lib out if you need wider transport and OS support or just want to use a more mature library.
+Unfortunately, it does appear abandoned -- the author has not been active on github at all between Jan 2018 and Jan 2019. It is also licensed under a non-standard and pretty satirical license (`DBAD`).
 
-_For me_, `node-ipc` did not make sense to use for a number of reasons. Upon review, I found it to appear dormant and it has
-more complexity than I need (a tough combination). I also struggle with its choice in licensing. That said, it's mere existence
-**did** make me _seriously_ wonder whether or not I should bother publishing this library. (Obviously I decided it was worth it!)
-
-### Why is this one different?
+## Why is this one different?
 
 I can't say that it is different than *all* of the others -- there really are a lot of projects tagged as IPC and I honestly didn't
 review them all. But from what I was able to review, I did feel like this one is worth adding to the pile... 
