@@ -9,6 +9,7 @@
 const {EventEmitter} = require('events');
 const net = require('net');
 const fs = require('fs');
+const xpipe = require('xpipe');
 const jsonTranscoder = require('./lib/transcoder/jsonTranscoder');
 const {MessageError, SendAfterCloseError, BadClientError, NoServerError} = require('./lib/error');
 
@@ -196,7 +197,7 @@ class Server extends EventEmitter {
         this._server.on('error', err => {
             if (err.code === 'EADDRINUSE') {
                 // See if it is a valid server by trying to connect to it.
-                const testSocket = net.createConnection({path: this._socketFile});
+                const testSocket = net.createConnection({path: xpipe.eq(this._socketFile)});
                 
                 // If the connection is established, then there is an active server and the originl
                 // error stands.
@@ -213,7 +214,7 @@ class Server extends EventEmitter {
 
                     // conn-refused implies that this is a dead sock file. Attempt to unlink it.
                     try {
-                        fs.unlinkSync(this._socketFile);
+                        fs.unlinkSync(xpipe.eq(this._socketFile));
                     } catch (unlinkErr) {
                         // Nope... unlink failed. Possibly because we don't have the perms to remove the sock.
                         // Emit the original error.
@@ -222,7 +223,7 @@ class Server extends EventEmitter {
                     }
 
                     // Try listening again.
-                    this._server.listen(this._socketFile);
+                    this._server.listen(xpipe.eq(this._socketFile));
                 });
             } else {
                 this.emit('error', err);
@@ -258,7 +259,7 @@ class Server extends EventEmitter {
             attachDataListener(socket, this, this._transcoder, id);
         });
 
-        this._server.listen(this._socketFile);
+        this._server.listen(xpipe.eq(this._socketFile));
     }
 
     close() {
@@ -359,7 +360,7 @@ class Client extends EventEmitter {
 
     _connect(isReconnect) {
         
-        const socket = net.createConnection({path: this._socketFile});
+        const socket = net.createConnection({path: xpipe.eq(this._socketFile)});
         socket.setEncoding(this._transcoder.socketEncoding);
 
         // Until a connection is established, handle errors as connection errors.
