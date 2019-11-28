@@ -104,9 +104,15 @@ or it can `broadcast()` a message to all connected clients.
 Creates a new server, but it does not start listening until you call [`server.listen()`](#serverlisten). You can 
 immediately attach listeners to the `Server` instance.
     
-#### Event: 'closed'
+#### Event: 'close'
 
 Emitted when the server has stopped listening for connections **and** all existing connections have been ended.
+
+#### Event: 'closed'
+
+_Deprecated in v0.3.0 - scheduled for removal in v1.0.0_
+
+Alias of `close` event.
 
 #### Event: 'connection'
   - `clientId` (`string`) - The id of the client. Use this to send a message to the client.
@@ -231,9 +237,15 @@ The client can receive messages from the server and it can [`send()`](#clientsen
 Creates a new client, but it does not connect until you call `client.connect()`. You can immediately
 attach listeners to the client instance.
 
-#### Event: 'closed'
+#### Event: 'close'
 
 Emitted when [`client.close()`](#clientclose) has been called **and** the client connection has been fully closed.
+
+#### Event: 'closed'
+
+_Deprecated in v0.3.0 - scheduled for removal in v1.0.0_
+
+Alias of `close` event.
 
 #### Event: 'connect'
   - `connection` (`net.Socket`) - The NodeJS [`net.Socket`](https://nodejs.org/docs/latest-v8.x/api/net.html#net_class_net_socket) 

@@ -228,7 +228,10 @@ class Server extends EventEmitter {
                 this.emit('error', err);
             }
         });
-        this._server.on('close', () => this.emit('close') );
+        this._server.on('close', () => {
+            this.emit('closed'); // TODO-1.0: Remove
+            this.emit('close');
+        });
 
         this._server.on('listening', () => {
             this.emit('listening');
@@ -399,7 +402,8 @@ class Client extends EventEmitter {
                 // See if this was an explicit close.
                 if (this._explicitClose) {
                     // Emit the "closed" event.
-                    this.emit('closed');
+                    this.emit('closed'); // TODO-1.0: Remove
+                    this.emit('close');
                 } else {
                     // Announce the disconnect, then try to reconnect after a configured delay.
                     this.emit('disconnect');
