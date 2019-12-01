@@ -20,6 +20,7 @@ An event-driven IPC implementation for NodeJS using unix file sockets
 - [Classes](#classes)
   * [Server](#server)
     - [new Server()](#new-serveroptions)
+    - [Event: 'close'](#event-close)
     - [Event: 'closed'](#event-closed)
     - [Event: 'connection'](#event-connection)
     - [Event: 'error'](#event-error)
@@ -32,6 +33,7 @@ An event-driven IPC implementation for NodeJS using unix file sockets
     - [server.broadcast(topic, message)](#serverbroadcasttopic-message)
   * [Client](#client)
     - [new Client()](#new-clientoptions)
+    - [Event: 'close'](#event-close-1)
     - [Event: 'closed'](#event-closed-1)
     - [Event: 'connect'](#event-connect)
     - [Event: 'connectError'](#event-connecterror)
@@ -60,6 +62,9 @@ An event-driven IPC implementation for NodeJS using unix file sockets
   * [encoderFactoryFunc](#encoderfactoryfunc)
 
 ## Important Changes
+
+### v0.3.0:
+  * `closed` event Deprecated in favor of `close` event for both `Server` and `Client`
   
 ### v0.2.0:
   
@@ -120,7 +125,7 @@ Alias of `close` event.
   of the connection.  Some applications may [benefit from listening directly](/docs/USAGE.md#event-timing) to the socket 
   events.
   
-Emitted when a client establishes a connection to the server.
+  Emitted when a client establishes a connection to the server.
 
 #### Event: 'error'
   - `error` (`Error`) - The error that occurred. 
