@@ -11,6 +11,7 @@ const net = require('net');
 const fs = require('fs');
 const jsonTranscoder = require('./lib/transcoder/jsonTranscoder');
 const {MessageError, SendAfterCloseError, BadClientError, NoServerError} = require('./lib/error');
+const uuid = require('uuid/v4');
 
 /**
  * @interface MessageWrapper
@@ -170,7 +171,6 @@ class Server extends EventEmitter {
         }
         
         this._socketFile = options.socketFile;
-        this._nextClientId = 1;
 
         // In the socket map, the keys are the sockets and the values are the client id. This allows incoming messages
         // to be easily associated with their client id.
@@ -239,7 +239,7 @@ class Server extends EventEmitter {
         
         this._server.on('connection', socket => {
             
-            const id = '' + this._nextClientId++; // Number, but treat it as a string!
+            const id = uuid();
             this._sockets.set(socket, id);
             this._clientLookup.set(id, socket);
 

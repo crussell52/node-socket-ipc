@@ -63,6 +63,10 @@ An event-driven IPC implementation for NodeJS using unix file sockets
 
 ## Important Changes
 
+### v0.4.0:
+  * Client id is now a v4 uuid. This is part of the official interface and implementations can rely on this detail
+    (thanks to @aamiryu7 for making the case).
+
 ### v0.3.0:
   * `closed` event Deprecated in favor of `close` event for both `Server` and `Client`
   
@@ -120,7 +124,7 @@ _Deprecated in v0.3.0 - scheduled for removal in v1.0.0_
 Alias of `close` event.
 
 #### Event: 'connection'
-  - `clientId` (`string`) - The id of the client. Use this to send a message to the client.
+  - `clientId` (`string`) - The id of the client. Use this to send a message to the client. This is a version 4 UUID.
   - `connection` (`net.Socket`) - The NodeJS [`net.Socket`](https://nodejs.org/docs/latest-v8.x/api/net.html#net_class_net_socket) 
   of the connection. 
   
