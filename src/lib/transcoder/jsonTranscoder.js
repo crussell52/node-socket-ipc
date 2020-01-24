@@ -7,7 +7,7 @@
 'use strict';
 
 const {DecodeError, EncodeError} = require('../error');
-const delimiter = '%EOM%';
+const delimiter = "\0\0";
 
 module.exports = {
     socketEncoding: 'utf8',
