@@ -152,6 +152,15 @@ const attachDataListener = (socket, emitter, transcoder, clientId) => {
     });
 };
 
+/**
+ * Helper function for getting a random int between two values.
+ */
+function getRandomIntInclusive(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive
+}
+
 class Server extends EventEmitter {
     /**
      * @param {string} options.socketFile - Path to the socket file to use.
@@ -330,8 +339,12 @@ class Client extends EventEmitter {
     /**
      * @param {Transcoder} [options.transcoder] - The transcoder to use to prepare messages to be written to the
      *     underlying socket or to process data being read from the underlying socket.
-     * @param {int} [options.retryDelay=1000] - The number of milliseconds to wait between connection attempts.
-     * @param {int} [options.reconnectDelay=100] - The number of milliseconds to wait before reconnecting.
+     * @param {int|{min:{int}, max:{int}}} [options.retryDelay=1000] - If an integer, this is the number of milliseconds
+     *   to wait between connection attempts. If an object then each delay will delayed by a random value between the
+     *   `min` and `max` value.
+     * @param {int|{min:{int}, max:{int}}} [options.reconnectDelay=100] - If an integer, this is the number of
+     *   milliseconds before trying to reconnect. If an object then each delay will be a random value between the `min`
+     *   and `max` value.
      * @param {string} options.socketFile - The path to the socket file to use.
      */
     constructor(options) {
@@ -346,8 +359,26 @@ class Client extends EventEmitter {
             throw new Error(`Invalid value for 'options.socketFile' (${options.socketFile}): ${invalidSockFileReason}`);
         }
         this._socketFile = options.socketFile;
-        this._retryDelay = options.retryDelay || 1000;
-        this._reconnectDelay = options.reconnectDelay || 100;
+
+        const retryDelayOpt = options.retryDelay || 1000;
+        if (Number.isInteger(retryDelayOpt)) {
+            this._retryDelay = {min: retryDelayOpt, max: retryDelayOpt}
+        } else {
+            this._retryDelay = {
+                min: retryDelayOpt.min || 1000,
+                max: retryDelayOpt.max || 1000
+            }
+        }
+
+        const reconDelayOpt = options.reconnectDelay || 1000;
+        if (Number.isInteger(reconDelayOpt)) {
+            this._reconnectDelay = {min: reconDelayOpt, max: reconDelayOpt}
+        } else {
+            this._reconnectDelay = {
+                min: reconDelayOpt.min || 100,
+                max: reconDelayOpt.max || 100
+            }
+        }
     }
 
     connect() {
@@ -368,7 +399,8 @@ class Client extends EventEmitter {
         // Until a connection is established, handle errors as connection errors.
         const handleConnectError = (err) => {
             this.emit('connectError', err);
-            this._retryTimeoutId = setTimeout(() => this._connect(isReconnect), this._retryDelay);
+            const retryDelay = getRandomIntInclusive(this._retryDelay.min, this._retryDelay.max);
+            this._retryTimeoutId = setTimeout(() => this._connect(isReconnect), retryDelay);
         };
         socket.on('error', handleConnectError);
 
@@ -407,7 +439,8 @@ class Client extends EventEmitter {
                 } else {
                     // Announce the disconnect, then try to reconnect after a configured delay.
                     this.emit('disconnect');
-                    this._reconnectDelayTimeoutId = setTimeout(() => this._connect(true), this._reconnectDelay);
+                    const reconnectDelay = getRandomIntInclusive(this._reconnectDelay.min, this._reconnectDelay.max);
+                    this._reconnectDelayTimeoutId = setTimeout(() => this._connect(true), reconnectDelay);
                 }
             });
         });

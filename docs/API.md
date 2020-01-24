@@ -218,10 +218,12 @@ The client can receive messages from the server and it can [`send()`](#clientsen
     * `socketFile` (`string`): The path to the socket file to connect to.
     * `[transcoder=jsonTranscoder]` (`Transcoder`) - A custom [`Transcoder`](#transcoder). Useful when encoding/decoding
       messages with JSON is not sufficient.
-    * `[retryDelay=1000]` (`number`) - The number of milliseconds to wait between connection attempts.
-    * `[reconnectDelay=100]` (`number`) - The number of milliseconds to wait before automatically
-            reconnecting after an unexpected disconnect.
-
+    * `[retryDelay=1000]` (`number|{min: int, max:int}`) - If an integer, the number of milliseconds to wait between 
+      connection attempts. If an object, each delay will be a random value between the `min` and `max` values.
+    * `[reconnectDelay=100]` (`number|{min: int, max:int}`) - If an integer, the number of milliseconds to wait before 
+      automatically reconnecting after an unexpected disconnect. If an object, each delay will be a random value between
+      the `min` and `max` values.
+      
 Creates a new client, but it does not connect until you call `client.connect()`. You can immediately
 attach listeners to the client instance.
 

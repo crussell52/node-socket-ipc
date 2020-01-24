@@ -15,7 +15,12 @@ const {Client} = require('../../src/index');
 
 const SOCKET_FILE = undefined;
 
-const client = new Client({socketFile: SOCKET_FILE});
+const client = new Client({
+    socketFile: SOCKET_FILE,
+    retryDelay: {min: 100, max: 1000},
+    reconnectDelay: {min: 5000, max: 10000}
+});
+
 client.on('connectError', () => console.log('no server'));
 client.on('connect', () => console.log('connected to server'));
 client.on('disconnect', () => console.log('disconnected from server'));
