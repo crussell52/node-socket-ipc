@@ -122,21 +122,27 @@ Alias of `close` event.
 #### Event: 'connection'
   - `clientId` (`string`) - The id of the client. Use this to send a message to the client.
   - `connection` (`net.Socket`) - The NodeJS [`net.Socket`](https://nodejs.org/docs/latest-v8.x/api/net.html#net_class_net_socket) 
-  of the connection.  Some applications may [benefit from listening directly](/docs/USAGE.md#event-timing) to the socket 
-  events.
+  of the connection. 
   
   Emitted when a client establishes a connection to the server.
 
 #### Event: 'error'
   - `error` (`Error`) - The error that occurred. 
 
-Emitted when an error occurs. 
-    
-After establishing a connection, the `Server` listens for `error` events from the underlying `net.Socket` and repeats
-them as a local event. As a result, you do not need to listen directly for socket errors to avoid 
-[unhandled exceptions](https://nodejs.org/docs/latest/api/events.html#events_error_events). However, some applications 
-may [benefit from listening directly](/docs/USAGE.md#event-timing) to the socket events.
+Emitted when an error occurs. Any errors emitted by the underlying `net.Server` will also be repeated via 
+this event as well as those from the underlying `net.Socket` instances of each connected client.
 
+Additionally, these specific error classes may be emitted.
+
+The following conditions will cause `Server` to emit an `error` event:
+
+ - ([`EncodeError`](#encodeerror)) - When the message can not be encoded by the active [`Transcoder`](#transcoder).
+ - ([`SendAfterCloseError`](#sendaftercloseerror)) - When this method is called after [`server.close()`](#serverclose) 
+   is called.
+ - ([`BadClientError`](#badclienterror)) - When a message is sent to a client that does not exist. To avoid this error, 
+   stop sending messages to clients once their underlying `net.Socket` -- provided by the 
+   [`connection`](#event-connection) event -- emits a `close` event.
+   
 #### Event: 'listening'
 
 Emitted when the server is ready for incoming connections.
@@ -166,20 +172,7 @@ Sends a message to **all** connected clients. On the client-side, this message c
 listening for the `message` or the `message.`_`topic`_ event.
 
 If there are no connected clients, this method will quietly do nothing.
-
-The following conditions will cause `Server` to emit an `error` event:
-
- - ([`EncodeError`](#encodeerror)) - When the message can not be encoded by the active [`Transcoder`](#transcoder). This
-   will be emitted once, regardless of how many clients are connected.
- - ([`SendAfterCloseError`](#sendaftercloseerror)) - When this method is called after [`server.close()`](#serverclose) 
-   is called. This will be emitted once, regardless of how many clients are connected.
-   
-Additionally, an `error` event will be emitted if an underlying `net.Socket` has stopped accepting data but the `Server`
-is not yet aware of it. This is most common in when the client abruptly disconnects. In these cases, the 
-[`error` event](#event-error) will simply be a repeat of the `net.Socket` error; some applications may 
-[benefit from listening directly](/docs/USAGE.md#event-timing) to the socket events. Such `error` events will be emitted 
-for every affected client.
-  
+     
 #### server.listen()
 
 Tells the server to start listening for client connections. This is an async operation and the 
@@ -198,24 +191,10 @@ This may only be called **once** per instance. Calling this method a second time
 Sends a message to a specific, connected, client. On the client-side, this message can be heard by
 listening for the `message` or the `message.`_`topic`_ event.
 
-The following conditions will cause `Server` to emit an `error` event:
-
- - ([`EncodeError`](#encodeerror)) - When the message can not be encoded by the active [`Transcoder`](#transcoder).
- - ([`SendAfterCloseError`](#sendaftercloseerror)) - When this method is called after [`server.close()`](#serverclose) 
-   is called.
- - ([`BadClientError`](#badclienterror)) - When this method targets a client which does not exist. To avoid this error, 
-   stop sending messages to this client by responding to the appropriate socket event(s). (The socket is provided with 
-   the [`connection`](#event-connection) event for this client).
-   
-Additionally, an `error` event may be emitted if the underlying `net.Socket` has stopped accepting data but the `Server`
-is not yet aware of it. This is most common in when the client abruptly disconnects. In these cases, the 
-[`error` event](#event-error) will simply be a repeat of the `net.Socket` error; some applications may 
-[benefit from listening directly](/docs/USAGE.md#event-timing) to the socket events.
-
 #### server.close()
 
 Closes all active connections and stops listening for new connections. This is an asynchronous 
-operation. Once the server is fully closed, the [`closed`](#event-closed) event will be emitted.
+operation. Once the server is fully closed, the [`close`](#event-close) event will be emitted.
 
 Any future calls to [`server.send()`](#serversendtopic-message-clientid) or 
 [`server.broadcast()`](#serverbroadcasttopic-message) will cause the server to emit an [`error`](#event-error) event.
@@ -254,8 +233,7 @@ Alias of `close` event.
 
 #### Event: 'connect'
   - `connection` (`net.Socket`) - The NodeJS [`net.Socket`](https://nodejs.org/docs/latest-v8.x/api/net.html#net_class_net_socket) 
-    of the connection. Some applications may [benefit from listening directly](/docs/USAGE.md#event-timing) to the 
-    socket events.
+    of the connection.
     
 Emitted when the `Client` establishes a connection with the server. This occurs during initial connection and during
 reconnect scenarios.
@@ -272,7 +250,7 @@ for the server to start may make sense; for others, you can use this event count
 
 #### Event: 'disconnect'
  
-Emitted when a client unexpectedly loses connection. This is distinct from the [`closed`](#event-closed-1) event that is
+Emitted when a client unexpectedly loses connection. This is distinct from the [`close`](#event-close-1) event that is
 a result of [`client.close()`](#clientclose) being called.
 
 The client emits this when it both conditions are met:
@@ -288,9 +266,16 @@ This event is emitted when the client hears an `close` event from the underlying
 Emitted when an error occurs.
 
 After establishing a connection, the `Client` listens for `error` events from the underlying `net.Socket` and repeats
-them as a local event. As a result, you do not need to listen directly for socket errors to avoid 
-[unhandled exceptions](https://nodejs.org/docs/latest/api/events.html#events_error_events). However, some applications 
-may [benefit from listening directly](/docs/USAGE.md#event-timing) to the socket events.
+them as a local event. 
+
+Additionally, the following Error objects may be emitted. 
+
+ - ([`EncodeError`](#encodeerror)) - When the message can not be encoded by the active [`Transcoder`](#transcoder).
+ - ([`SendAfterCloseError`](#sendaftercloseerror)) - When a `client.send()` after [`client.close()`](#serverclose) 
+   is called.
+ - ([`NoServerError`](#noservererror)) - When `client.send()` is called and there is no active server connection. The
+   [`connect`](#event-connect), [`reconnect`](#event-reconnect), and [`disconnect`](#event-reconnect) events to avoid 
+   this error.
 
 #### Event: 'message'
   - `message` (`any`) - The message from the client. By default, this can be any JSON deserializable 
@@ -321,7 +306,7 @@ client.on('reconnect', /* ... */);  // But respond to every reconnect event
 #### client.close()
 
 Permanently closes the connection. There will be no automatic reconnect attempts. This is an asynchronous
-operation; the [`closed`](#event-closed-1) event will be emitted when the connection to the client has been completely
+operation; the [`close`](#event-close-1) event will be emitted when the connection to the client has been completely
 closed.
 
 Any future call to [`client.send()`](#clientsendtopic-message) will cause the client to emit an [`error`](#event-error-1) 
@@ -345,7 +330,7 @@ Once connected a [`connect`](#event-connect) will be emitted providing access to
 
 If the underlying socket emits a [`close`](https://nodejs.org/docs/latest-v8.x/api/net.html#net_event_close) event, 
 the behavior varies depending on whether or not [`client.close()`](#clientclose)` has been called:
-  - If `client.close()` has been called, the client will emit a [`closed`](#event-closed-1) and no more messages may
+  - If `client.close()` has been called, the client will emit a [`close`](#event-close-1) and no more messages may
     be sent from this instance.
   - if `client.close()` has NOT been called, the client will emit a [`disconnect`](#event-disconnect) event and
     it will automatically try to reconnect. The reconnection routine is identical to the initial connection routine with
@@ -359,20 +344,6 @@ the behavior varies depending on whether or not [`client.close()`](#clientclose)
  
 Sends a message to the server. On the server-side, this message can be heard by listening for the 
 [`message`](#event-message-1) or the [`message.`_`topic`_](#event-messagetopic-1) event.
-
-The following conditions will cause `Client` to emit an `error` event:
-
- - ([`EncodeError`](#encodeerror)) - When the message can not be encoded by the active [`Transcoder`](#transcoder).
- - ([`SendAfterCloseError`](#sendaftercloseerror)) - When this method is called after [`client.close()`](#serverclose) 
-   is called.
- - ([`NoServerError`](#noservererror)) - When this method is called and there is no active server connection. The
-   `connect`, `reconnect`, and `disconnect` events (or the related events from the underlying `net.Socket`) can be used
-   to avoid this error.
-
-Additionally, an `error` event will be emitted if the underlying `net.Socket` has stopped accepting data but the `Client`
-is not yet aware of it. This is most common in when the server abruptly disconnects. In these cases, the 
-[`error` event](#event-error) will simply be a repeat of the `net.Socket` error; some applications may 
-[benefit from listening directly](/docs/USAGE.md#event-timing) to the socket events. 
       
 ### EncodeError
 ### DecodeError
