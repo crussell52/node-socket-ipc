@@ -1,6 +1,6 @@
 {
   "name": "@crussell52/socket-ipc",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "An event-driven IPC implementation using unix file sockets.",
   "keywords": [
     "ipc",
