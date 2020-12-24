@@ -456,6 +456,9 @@ class Client extends EventEmitter {
         clearTimeout(this._reconnectDelayTimeoutId);
         if (this._socket) {
             this._socket.end();
+        } else {
+            // No underlying socket, so no close event to proxy. Emit it manually.
+            this.emit('close')
         }
     }
 
